@@ -26,10 +26,24 @@ public class TpchTestdb {
     }
 
     
-    public void execute_load() throws SQLException, IOException{
-    	executeFile("tpch/create-table.sql");
+    public void execute_load(String table_type) throws SQLException, IOException{
+    	Statement st = conn.createStatement();
+        st.execute("set autocommit false;");
+    	executeFile("tpch/create-table-" + table_type + ".sql");
+    	executeFile("tpch/add-key.sql");
+    	st.execute("commit;");
+    	
+        if(table_type == "text"){
+        	executeFile("tpch/set-source.sql");
+        	st.execute("commit;");
+        }
+        
         executeFile("tpch/data.sql");
-        executeFile("tpch/add-key.sql");
+        st.execute("commit;");
+
+        
+        
+        st.execute("set autocommit true");
     }
     public void execute_refresh_function_1() throws SQLException, IOException{
     	executeFile("tpch/rf1.sql");
@@ -39,13 +53,13 @@ public class TpchTestdb {
     }
     
     public void executeFile(String filename) throws SQLException, IOException {
-    	System.out.println(filename);
     	
     	BufferedReader br = new BufferedReader(new FileReader(filename));  
     	String line = null;
     	Statement st = conn.createStatement();
+    	
     	while ((line = br.readLine()) != null)  {
-    	   st.execute(line);
+    		st.execute(line);
     	} 
     	br.close();
     }
@@ -56,10 +70,11 @@ public class TpchTestdb {
         conn.close();
     }
     
+    
     // total run time, in milliseconds
-    public long load() throws SQLException, IOException{
+    public long load(String table_type) throws SQLException, IOException{
     	Timer t = new Timer();
-    	execute_load();
+    	execute_load(table_type);
         return t.end();
     }
 
@@ -78,12 +93,11 @@ public class TpchTestdb {
     	String line = null;
     	Statement st = conn.createStatement();
     	while ((line = br.readLine()) != null)  {
-    		System.out.println(line);
     		t = new Timer();
     		for(String subline : line.split(";")){
     			st.executeQuery(subline);
     		}
-    		sum += Math.log(t.end());    		
+    		sum += Math.log(t.end());
     	} 
     	br.close();
     	
@@ -105,25 +119,30 @@ public class TpchTestdb {
     		start = System.currentTimeMillis();
     	}
     	public long end(){
-    		return System.currentTimeMillis() - start;
+    		long time = System.currentTimeMillis() - start;
+    		System.out.print(time);
+    		System.out.println(" milliseconds");
+    		return time;
     	}
     }
     
-    public static void main(String[] args) throws IOException {
-
+    public static void test(String table_type) throws IOException{
+    	
+    	System.out.print(table_type);
+    	System.out.println(" table: ");
+    	
         TpchTestdb db = null;
 
         try {
-            db = new TpchTestdb("tpch-test-db");
+            db = new TpchTestdb("tpch-test-"+ table_type);
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
 
         try {
-            
         	System.out.println("Load");
-        	System.out.println(db.load());
+        	System.out.println(db.load(table_type));
         	System.out.println("Power");
         	System.out.println(db.power());
         	System.out.println("Throughput");
@@ -136,6 +155,13 @@ public class TpchTestdb {
         	System.out.println("Try removing exisiting test db.");
             e.printStackTrace();
         };
-    }    // main()
-}    // class TpchTestdb
+    }
+    public static void main(String[] args) throws IOException {
+    	
+    	test("memory");
+    	test("text");
+    	test("cache");
+    }
+    
+} // class TpchTestdb
 
