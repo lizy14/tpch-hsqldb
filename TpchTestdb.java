@@ -28,22 +28,22 @@ public class TpchTestdb {
     
     public void execute_load(String table_type) throws SQLException, IOException{
     	Statement st = conn.createStatement();
-        st.execute("set autocommit false;");
+//        st.execute("set autocommit false;");
     	executeFile("tpch/create-table-" + table_type + ".sql");
     	executeFile("tpch/add-key.sql");
-    	st.execute("commit;");
+//    	st.execute("commit;");
     	
         if(table_type == "text"){
         	executeFile("tpch/set-source.sql");
-        	st.execute("commit;");
+//        	st.execute("commit;");
         }
         
         executeFile("tpch/data.sql");
-        st.execute("commit;");
+//        st.execute("commit;");
 
         
         
-        st.execute("set autocommit true");
+//        st.execute("set autocommit true");
     }
     public void execute_refresh_function_1() throws SQLException, IOException{
     	executeFile("tpch/rf1.sql");
@@ -89,7 +89,8 @@ public class TpchTestdb {
     	sum += Math.log(t.end()); //TODO: log of zero
     	
     	//execute_query_set
-    	BufferedReader br = new BufferedReader(new FileReader("tpch/test.sql"));  
+    	// CHANGED: skip q7, q20
+    	BufferedReader br = new BufferedReader(new FileReader("tpch/test-skipping.sql"));  
     	String line = null;
     	Statement st = conn.createStatement();
     	while ((line = br.readLine()) != null)  {
@@ -105,7 +106,7 @@ public class TpchTestdb {
     	execute_refresh_function_2();
     	sum += Math.log(t.end());
     	
-    	return Math.exp(- sum / 24.);
+    	return Math.exp(- sum / 22.); // CHANGED: skip q7, q20 
     }
     
     // TODO
@@ -141,26 +142,30 @@ public class TpchTestdb {
         }
 
         try {
-        	System.out.println("Load");
-        	System.out.println(db.load(table_type));
+//        	System.out.println("Load");
+//        	System.out.println(db.load(table_type));
         	System.out.println("Power");
         	System.out.println(db.power());
-        	System.out.println("Throughput");
-        	System.out.println(db.throughput());
+        	
+        	// CHANGED: skip Throughput test
+//        	System.out.println("Throughput");
+//        	System.out.println(db.throughput());
         	
         	System.out.println("Done");
             db.shutdown();
             
         } catch (SQLException e) {
-        	System.out.println("Try removing exisiting test db.");
             e.printStackTrace();
         };
     }
     public static void main(String[] args) throws IOException {
+
+    	test("cached");
+    	// CHANGED: cached table only
+//    	test("text");
+//    	test("memory");
+    	 
     	
-    	test("memory");
-    	test("text");
-    	test("cache");
     }
     
 } // class TpchTestdb
